@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gym Elite</title>
+
+<style>
+:root{
+--bg:#0f0f0f;
+--card:#1b1b1b;
+--neon:#c6ff00;
+--dark:#2a2a2a;
+--danger:#c62828;
+}
+
+body{
+margin:0;
+font-family:Segoe UI,Arial;
+background:linear-gradient(180deg,#0a0a0a,#111);
+color:#fff;
+padding-bottom:90px;
+}
+
+h2{
+text-align:center;
+letter-spacing:2px;
+color:var(--neon);
+}
+
+.page{
+display:none;
+padding:20px;
+max-width:520px;
+margin:auto;
+}
+.page.active{display:block}
+
+button{
+padding:12px;
+border-radius:12px;
+border:none;
+margin:6px 0;
+font-weight:bold;
+cursor:pointer;
+transition:0.2s;
+font-size:14px;
+}
+
+button:hover{
+transform:scale(1.03);
+}
+
+.primary{
+background:var(--neon);
+color:#000;
+width:100%;
+box-shadow:0 0 10px var(--neon);
+}
+
+.dark{
+background:var(--dark);
+color:#fff;
+width:100%;
+}
+
+.danger{
+background:var(--danger);
+color:#fff;
+width:100%;
+}
+
+input{
+width:100%;
+padding:8px;
+margin:6px 0;
+background:#121212;
+color:#fff;
+border:1px solid #333;
+border-radius:8px;
+}
+
+.exercise{
+background:var(--card);
+padding:14px;
+margin:14px 0;
+border-radius:16px;
+box-shadow:0 0 8px #000;
+}
+
+.exercise div:first-child{
+font-weight:bold;
+color:var(--neon);
+margin-bottom:6px;
+}
+
+.series{
+background:#333;
+padding:6px 12px;
+border-radius:8px;
+display:inline-block;
+margin-top:6px;
+cursor:pointer;
+transition:0.2s;
+}
+
+.series.done{
+border:2px solid var(--neon);
+color:var(--neon);
+box-shadow:0 0 8px var(--neon);
+}
+
+.timer{
+text-align:center;
+font-size:30px;
+margin:12px 0;
+color:var(--neon);
+font-weight:bold;
+}
+
+#totalTimer{
+text-align:center;
+font-size:16px;
+opacity:0.6;
+margin-bottom:6px;
+}
+
+.nav{
+position:fixed;
+bottom:0;
+width:100%;
+display:flex;
+background:#111;
+border-top:1px solid #222;
+}
+
+.nav div{
+flex:1;
+text-align:center;
+padding:18px;
+cursor:pointer;
+color:#555;
+font-size:20px;
+transition:0.2s;
+}
+
+.nav .active{
+color:var(--neon);
+text-shadow:0 0 6px var(--neon);
+}
+
+.calendar{
+display:grid;
+grid-template-columns:repeat(7,1fr);
+gap:8px;
+background:var(--card);
+padding:15px;
+border-radius:16px;
+margin-top:10px;
+}
+
+.day{
+aspect-ratio:1;
+display:flex;
+align-items:center;
+justify-content:center;
+border-radius:50%;
+font-size:13px;
+background:#121212;
+transition:0.2s;
+}
+
+.day:hover{
+background:#222;
+}
+
+.doneDay{
+background:rgba(198,255,0,0.2);
+color:var(--neon);
+box-shadow:0 0 6px var(--neon);
+cursor:pointer;
+}
+
+label{
+opacity:0.7;
+font-size:13px;
+}
+
+</style>
+</head>
+<body>
+
+<div id="workout" class="page active">
+<h2>GYM ELITE</h2>
+
+<div id="setup">
+<button class="dark treino" data-t="A">TREINO A</button>
+<button class="dark treino" data-t="B">TREINO B</button>
+<button class="dark treino" data-t="C">TREINO C</button>
+
+<label>Descanso (segundos)</label>
+<input type="number" id="restTime" value="60">
+
+<button class="primary" onclick="startWorkout()">INICIAR</button>
+</div>
+
+<div id="active" style="display:none">
+<div id="totalTimer">00:00:00</div>
+
+<div class="timer" id="restTimer">00:00</div>
+<button class="dark" onclick="startRest()">INICIAR DESCANSO</button>
+<button class="dark" onclick="stopRest()">PARAR DESCANSO</button>
+
+<div id="list"></div>
+
+<button class="primary" onclick="finish()">FINALIZAR E SALVAR</button>
+<button class="danger" onclick="location.reload()">SAIR SEM SALVAR</button>
+</div>
+</div>
+
+<div id="history" class="page">
+<h2>HISTÓRICO</h2>
+<div id="month" style="text-align:center;opacity:0.7"></div>
+<div id="calendar" class="calendar"></div>
+</div>
+
+<div class="nav">
+<div class="active" onclick="switchTab('workout',this)">🏋️</div>
+<div onclick="switchTab('history',this)">📅</div>
+</div>
+
+<script>
+
+/* 🔥 Mantive toda sua lógica intacta */
+
+const treinos = {
+A:[
+["Supino Reto (Barra)",3],
+["Supino Inclinado (Halter)",3],
+["Peck Deck / Crossover",3],
+["Desenvolvimento Militar",3],
+["Elevação Lateral",4],
+["Tríceps Testa",3],
+["Tríceps Pulley",3],
+["Abdominal com Halter",4]
+],
+B:[
+["Puxada Alta",3],
+["Remada Baixa (Triângulo)",3],
+["Remada Serrote",3],
+["Encolhimento com Halteres",3],
+["Crucifixo Inverso",3],
+["Rosca Direta (Barra W)",3],
+["Rosca Martelo",3],
+["Abdominal Infra",4]
+],
+C:[
+["Agachamento Livre",3],
+["Leg Press 45°",4],
+["Cadeira Extensora",3],
+["Mesa Flexora",3],
+["Stiff",3],
+["Panturrilha em Pé",4],
+["Panturrilha Sentado",3],
+["Abdominal na Máquina",4]
+]
+};
+
+let treino="A";
+let total=0;
+let totalInt;
+let restInt;
+let workoutData=[];
+
+document.querySelectorAll(".treino").forEach(b=>{
+b.onclick=()=>{
+treino=b.dataset.t;
+document.querySelectorAll(".treino").forEach(x=>x.style.border="none");
+b.style.border="2px solid #c6ff00";
+};
+});
+
+function switchTab(id,el){
+document.querySelectorAll(".page").forEach(p=>p.classList.remove("active"));
+document.querySelectorAll(".nav div").forEach(n=>n.classList.remove("active"));
+document.getElementById(id).classList.add("active");
+el.classList.add("active");
+if(id==="history") renderCalendar();
+}
+
+function startWorkout(){
+document.getElementById("setup").style.display="none";
+document.getElementById("active").style.display="block";
+
+totalInt=setInterval(()=>{
+total++;
+let h=Math.floor(total/3600);
+let m=Math.floor((total%3600)/60);
+let s=total%60;
+document.getElementById("totalTimer").innerText=
+`${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+},1000);
+
+renderExercises();
+}
+
+function renderExercises(){
+let list=document.getElementById("list");
+list.innerHTML="";
+workoutData=[];
+
+treinos[treino].forEach(ex=>{
+let div=document.createElement("div");
+div.className="exercise";
+
+let title=document.createElement("div");
+title.innerText=ex[0];
+
+let input=document.createElement("input");
+input.placeholder="Peso utilizado (kg)";
+
+let btn=document.createElement("div");
+btn.className="series";
+btn.innerText="0 / "+ex[1];
+btn.dataset.c=0;
+
+btn.onclick=()=>{
+let c=parseInt(btn.dataset.c);
+if(c<ex[1]){
+c++;
+btn.dataset.c=c;
+btn.innerText=c+" / "+ex[1];
+if(c==ex[1]) btn.classList.add("done");
+}
+};
+
+div.appendChild(title);
+div.appendChild(input);
+div.appendChild(btn);
+list.appendChild(div);
+
+workoutData.push({name:ex[0],input});
+});
+}
+
+function startRest(){
+clearInterval(restInt);
+let sec=parseInt(document.getElementById("restTime").value)||60;
+updateRest(sec);
+restInt=setInterval(()=>{
+sec--;
+updateRest(sec);
+if(sec<=0){
+clearInterval(restInt);
+alert("Descanso finalizado");
+}
+},1000);
+}
+
+function stopRest(){
+clearInterval(restInt);
+document.getElementById("restTimer").innerText="00:00";
+}
+
+function updateRest(s){
+document.getElementById("restTimer").innerText="00:"+String(s).padStart(2,'0');
+}
+
+function finish(){
+clearInterval(totalInt);
+let hist=JSON.parse(localStorage.getItem("gymHist")||"{}");
+let today=new Date().toDateString();
+hist[today]={
+treino,
+ex:workoutData.map(e=>({name:e.name,weight:e.input.value||0}))
+};
+localStorage.setItem("gymHist",JSON.stringify(hist));
+location.reload();
+}
+
+function renderCalendar(){
+let cal=document.getElementById("calendar");
+let hist=JSON.parse(localStorage.getItem("gymHist")||"{}");
+let now=new Date();
+document.getElementById("month").innerText=
+now.toLocaleString("pt-BR",{month:"long",year:"numeric"});
+cal.innerHTML="";
+
+let first=new Date(now.getFullYear(),now.getMonth(),1).getDay();
+let days=new Date(now.getFullYear(),now.getMonth()+1,0).getDate();
+
+for(let i=0;i<first;i++) cal.appendChild(document.createElement("div"));
+
+for(let d=1;d<=days;d++){
+let cell=document.createElement("div");
+cell.className="day";
+let dateStr=new Date(now.getFullYear(),now.getMonth(),d).toDateString();
+cell.innerText=d;
+
+if(hist[dateStr]){
+cell.classList.add("doneDay");
+cell.onclick=()=>{
+let txt="Treino "+hist[dateStr].treino+"\n\n";
+hist[dateStr].ex.forEach(e=>{
+txt+=e.name+" - "+e.weight+"kg\n";
+});
+alert(txt);
+};
+}
+
+cal.appendChild(cell);
+}
+}
+
+</script>
+</body>
+</html>
